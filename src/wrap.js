@@ -22,6 +22,8 @@
     wrapper.id = snack.id()
     return wrapper
   }
+  
+  var $ = window.$ = snack.wrap;
 
   snack.extend(snack.wrap, {
     define: function(name, fn){
