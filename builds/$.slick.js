@@ -708,7 +708,52 @@ if (typeof Object.create != 'function'){
   window[add](prefix + 'load', init, false);
 }(window, document);
 
-(function(snack) {
+!function (snack){
+  snack.publisher = function (obj){
+    var channels = {}
+    obj = obj || {}
+
+    snack.extend(obj, {
+      subscribe: function (channel, handler, context){
+        var subscription = {
+          fn: handler,
+          ctxt: (context || {})
+        }
+
+        if (!channels[channel])
+          channels[channel] = []
+
+        var publik = {
+          attach: function (){
+            channels[channel].push(subscription)
+          },
+          detach: function (){
+            channels[channel].splice(snack.indexOf(handler, channels[channel]), 1)
+          }
+        }
+        publik.attach()
+        return publik
+      },
+
+      publish: function (channel, argsArray){
+        if (!channels[channel])
+          return false
+
+        snack.each(channels[channel], function (subscription){
+          subscription.fn.apply(subscription.ctxt, argsArray || [])
+        })
+
+        return channels[channel].length
+      }
+    })
+
+    return obj
+  }
+
+  snack.publisher(snack)
+}(snack);
+
+(function(/*snack, window*/) {
   var class2type = {}, trim = String.prototype.trim,
   rspace = /\s+/,
   rclass = /[\n\t\r]/g,
@@ -757,8 +802,7 @@ if (typeof Object.create != 'function'){
 
   function typeOf(obj) {
     var type = toString.call(obj);
-    //console.log(type);
-    if((new RegExp('[object .*"Element".*]]')).test(type) && !class2type[type]) {
+    if(/\[object HTML(.*)Element.*\]/.test(type) && !class2type[type]) {
       return "element";
     }
     return obj == null ? String(obj) : class2type[type] || "object";
@@ -828,6 +872,9 @@ if (typeof Object.create != 'function'){
   }
 
   snack.extend($, {
+    nodeName: function(elem, name) {
+      return elem.nodeName && elem.nodeName.toUpperCase() == name.toUpperCase();
+    },
     nth: function( cur, result, dir, elem, args ) {
       result = result || 1;
       var num = 0;
@@ -949,7 +996,7 @@ if (typeof Object.create != 'function'){
       i = 0,
       length = elems.length,
       // $ objects are treated as arrays
-      isArray = elems instanceof $.fn || length !== undefined && typeof length === "number" && ( ( length > 0 && elems[ 0 ] && elems[ length -1 ] ) || length === 0 || jQuery.isArray( elems ) ) ;
+      isArray = elems instanceof $.fn || length !== undefined && typeof length === "number" && ( ( length > 0 && elems[ 0 ] && elems[ length -1 ] ) || length === 0 || $.isArray( elems ) ) ;
 
       // Go through the array, translating each of the items to their
       if ( isArray ) {
@@ -1026,7 +1073,7 @@ if (typeof Object.create != 'function'){
     },
     // clone any object basically
     copy: function(object) {
-      var rtnData = null;
+      var rtnData = null, prop;
       if(object instanceof $.fn) {
         rtnData = $($.copy(object.get()), object.context);
       } else {
@@ -1042,7 +1089,7 @@ if (typeof Object.create != 'function'){
             if(funcName) {
               rtnData = eval("(function() {"+object.toString()+"return " + funcName + ";})();");
             } else {
-              rtnData = eval(object.toString())
+              rtnData = eval("(" + object.toString() + ")");
             }
             break;
           case "date":
@@ -1123,7 +1170,7 @@ if (typeof Object.create != 'function'){
       return typeOf(thing) == "function";
     },
     isUndefined: function(thing) {
-      return typeOf(thing) == "undefined";
+      return typeof thing == "undefined";
     },
     isDefined: function(thing) {
       return !$.isUndefined(thing);
@@ -1247,7 +1294,7 @@ if (typeof Object.create != 'function'){
           [];
 
           for ( var j = tbody.length - 1; j >= 0 ; --j ) {
-            if ( jQuery.nodeName( tbody[ j ], "tbody" ) && !tbody[ j ].childNodes.length ) {
+            if ( $.nodeName( tbody[ j ], "tbody" ) && !tbody[ j ].childNodes.length ) {
               tbody[ j ].parentNode.removeChild( tbody[ j ] );
             }
           }
@@ -1344,10 +1391,10 @@ if (typeof Object.create != 'function'){
         whatsToAdd = getElementsToAdd($.createNodeList(element));
       }
       this.each(function(el) {
-        console.log(el)
+        //console.log(el)
         var thisEl = el;
         for(var i = whatsToAdd.length - 1; i >= 0; i--) {
-          console.log($.copy(whatsToAdd[i]), thisEl.firstChild);
+          //console.log($.copy(whatsToAdd[i]), thisEl.firstChild);
           thisEl.insertBefore($.copy(whatsToAdd[i]), thisEl.firstChild);
         }
       });
@@ -1411,7 +1458,7 @@ if (typeof Object.create != 'function'){
       this.each(function(el) {
         var thisEl = el;
         $.each(whatsToAdd, function(appendel) {
-          thisEl.appendChild(appendel);
+          thisEl.appendChild($.copy(appendel));
         });
       });
 
@@ -1627,25 +1674,25 @@ if (typeof Object.create != 'function'){
       return $.dir( elem, "parentNode" );
     },
     next: function( elem ) {
-      return jQuery.nth( elem, 2, "nextSibling" );
+      return $.nth( elem, 2, "nextSibling" );
     },
     prev: function( elem ) {
-      return jQuery.nth( elem, 2, "previousSibling" );
+      return $.nth( elem, 2, "previousSibling" );
     },
     nextAll: function( elem ) {
-      return jQuery.dir( elem, "nextSibling" );
+      return $.dir( elem, "nextSibling" );
     },
     prevAll: function( elem ) {
-      return jQuery.dir( elem, "previousSibling" );
+      return $.dir( elem, "previousSibling" );
     },
     siblings: function( elem ) {
-      return jQuery.sibling( elem.parentNode.firstChild, elem );
+      return $.sibling( elem.parentNode.firstChild, elem );
     },
     children: function( elem ) {
-      return jQuery.sibling( elem.firstChild );
+      return $.sibling( elem.firstChild );
     },
     contents: function( elem ) {
-      return jQuery.nodeName( elem, "iframe" ) ?
+      return $.nodeName( elem, "iframe" ) ?
       elem.contentDocument || elem.contentWindow.document :
       $( elem.childNodes );
     }
@@ -1692,7 +1739,7 @@ if (typeof Object.create != 'function'){
   });
   window.$ = $;
 
-(function(snack, $, document) {
+(function(/*snack, $, document*/) {
   $.setEngine({
     query: function(selector, context) {
       if($.isUndefined(context)) context = document;
@@ -1741,8 +1788,8 @@ if (typeof Object.create != 'function'){
           }
         } else {
           rtnEls = preEls;
-          levelEl = preEls[0];
         }
+        levelEl = preEls[0];
         preEls = new Array();
         nextPre = false;
       }
@@ -1754,8 +1801,8 @@ if (typeof Object.create != 'function'){
           }
         } else {
           rtnEls = addEls;
-          levelEl = addEls[0];
         }
+        levelEl = addEls[0];
         addEls = new Array();
         nextAdd = false;
       }
@@ -1788,10 +1835,10 @@ if (typeof Object.create != 'function'){
 
             if(levelEl) {
               levelEl.appendChild(elem);
-              levelEl = elem;
             } else {
               rtnEls = [elem];
             }
+            levelEl = elem;
           }
           break;
       }
@@ -1810,7 +1857,7 @@ if (typeof Object.create != 'function'){
       return $(elems);
     }
   });
-})(window.snack, window.$, document);
+})(/*window.snack, window.$, document*/);
 
   snack.extend($, {
     support: (function() {
@@ -2196,7 +2243,7 @@ if (typeof Object.create != 'function'){
     })()
   });
 
-})(window.snack);
+})(/*window.snack, window*/);
 (function() {
   var pseudos = {
     enabled: function( elem ) {

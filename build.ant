@@ -37,7 +37,7 @@
 
     <concat destfile="builds/$.tmp.js" fixlastline="yes">
       <filelist dir="builds" files="header.txt" />
-      <filelist dir="src" files="array.indexof.js, array.every.js, json2.js, $.snack.js, $.js, $.psuedos.js" />
+      <filelist dir="src" files="array.indexof.js, array.every.js, json2.js, $.snack.js, publisher.js, $.js, $.psuedos.js" />
       <filelist dir="src/${engine}" files="${engine}.js" />
     </concat>
     <replace file="builds/$$.tmp.js" token="// css engine here" value="${$.engine.file}" />
