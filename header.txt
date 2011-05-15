@@ -1,0 +1,4 @@
+/* $.js written by Drew Young
+* Includes ${engine}, snackJs' core.js and ready function,
+* parts of jQuery and stuff from random places online
+*/

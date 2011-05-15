@@ -1,0 +1,90 @@
+<project>
+  <property name="engine" value="sizzle" />
+
+  <target name="loadFiles">
+    <copy file="src/$.ajax.js" tofile="src/$.ajax.copy.js"  overwrite="true" />
+    <replace file="src/$.ajax.copy.js" token="(function(snack, $) {" />
+    <replace file="src/$.ajax.copy.js" token="})(window.snack, window.$);" />
+    <loadfile srcFile="src/$.ajax.copy.js" property="$.ajax.file" />
+    <delete file="src/$$.ajax.copy.js" />
+
+    <copy file="src/$.support.js" tofile="src/$.support.copy.js"  overwrite="true" />
+    <replace file="src/$.support.copy.js" token="(function(snack, $) {" />
+    <replace file="src/$.support.copy.js" token="})(window.snack, window.$);" />
+    <loadfile srcFile="src/$.support.copy.js" property="$.support.file" />
+    <delete file="src/$$.support.copy.js" />
+
+    <copy file="src/$.${engine}.js" tofile="src/$.${engine}.copy.js"  overwrite="true" />
+    <replace file="src/$.${engine}.copy.js" token="(function(snack, $) {" />
+    <replace file="src/$.${engine}.copy.js" token="})(window.snack, window.$);" />
+    <loadfile srcFile="src/$.${engine}.copy.js" property="$.engine.file" />
+    <delete file="src/$$.${engine}.copy.js" />
+    <echo message="Using css engine adapter at: src/$$.${engine}.js" />
+    <echo message="Using css selector engine at: src/${engine}/${engine}.js" />
+  </target>
+
+  <target name="combine" depends="loadFiles">
+    <mkdir dir="builds"/>
+    
+    <!--<copy file="src/array.indexof.js" tofile="builds/$.tmp.js" overwrite="true" />-->
+
+    <concat destfile="builds/header.txt">
+      <filelist files="header.txt" />
+      <filterchain>
+        <expandproperties />
+      </filterchain>
+    </concat>
+
+    <concat destfile="builds/$.tmp.js" fixlastline="yes">
+      <filelist dir="builds" files="header.txt" />
+      <filelist dir="src" files="array.indexof.js, array.every.js, json2.js, $.snack.js, $.js, $.psuedos.js" />
+      <filelist dir="src/${engine}" files="${engine}.js" />
+    </concat>
+    <replace file="builds/$$.tmp.js" token="// css engine here" value="${$.engine.file}" />
+    <replace file="builds/$$.tmp.js" token="// $.support.js here" value="${$.support.file}" />
+    <replace file="builds/$$.tmp.js" token="// $.ajax.js here" value="${$.ajax.file}" />
+    <move file="builds/$$.tmp.js" tofile="builds/$$.js" />
+  </target>
+
+  <target name="compress" depends="combine">
+    <loadfile srcFile="builds/$$.js" property="dollar" />
+    <exec executable="cmd">
+      <arg value="/c"/>
+      <arg value="node noComments.js"/>
+      <redirector inputstring="${dollar}" outputproperty="dollarFile" />
+    </exec>
+    <echo file="builds/$$.copy.js" message="${dollarFile}" />
+    <exec executable="cmd">
+      <arg value="/c"/>
+      <arg value="compressor builds/$.copy.js"/>
+      <arg value="-o"/>
+      <arg value="builds/$.min.js"/>
+    </exec>
+    <delete file="builds/$.copy.js" />
+  </target>
+
+  <target name="slick">
+    <exec executable="cmd">
+      <arg value="/c"/>
+      <arg value="ant -Dengine=slick -f build.ant combine"/>
+    </exec>
+  </target>
+  
+  <target name="slick:compress">
+    <exec executable="cmd">
+      <arg value="/c"/>
+      <arg value="ant -Dengine=slick -f build.ant compress"/>
+    </exec>
+  </target>
+  
+  <target name="commit">
+    <exec executable="cmd">
+      <arg value="/c"/>
+      <arg value="git commit -a -m '${commit}'"/>
+    </exec>
+    <exec executable="cmd">
+      <arg value="/c"/>
+      <arg value="git push origin master"/>
+    </exec>
+  </target>
+</project>
