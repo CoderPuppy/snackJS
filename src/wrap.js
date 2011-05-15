@@ -6,6 +6,14 @@
     // passed in a CSS selector
     if (typeof nodes == 'string')
       nodes = query(nodes, context)
+    if(typeof nodes == 'object' && nodes instanceof Array) {
+      var oldNodes = nodes;
+      nodes = new Array();
+      for(var i = 0; i < oldNodes.length; i++) {
+        nodes[i] = query(oldNodes[i], context);
+      }
+      console.log('nodes: ', nodes, 'oldNodes: ', oldNodes);
+    }
 
     // passed in single node
     if (!nodes.length)
@@ -23,7 +31,7 @@
     return wrapper
   }
   
-  var $ = window.$ = snack.wrap;
+
 
   snack.extend(snack.wrap, {
     define: function(name, fn){
