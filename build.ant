@@ -28,39 +28,39 @@
     
     <!--<copy file="src/array.indexof.js" tofile="builds/$.tmp.js" overwrite="true" />-->
 
-    <concat destfile="builds/header.txt">
+    <concat destfile="builds/${engine}.header.txt">
       <filelist files="header.txt" />
       <filterchain>
         <expandproperties />
       </filterchain>
     </concat>
 
-    <concat destfile="builds/$.tmp.js" fixlastline="yes">
-      <filelist dir="builds" files="header.txt" />
+    <concat destfile="builds/$.${engine}.tmp.js" fixlastline="yes">
+      <filelist dir="builds" files="${engine}.header.txt" />
       <filelist dir="src" files="array.indexof.js, array.every.js, json2.js, $.snack.js, publisher.js, $.js, $.psuedos.js" />
       <filelist dir="src/${engine}" files="${engine}.js" />
     </concat>
-    <replace file="builds/$$.tmp.js" token="// css engine here" value="${$.engine.file}" />
-    <replace file="builds/$$.tmp.js" token="// $.support.js here" value="${$.support.file}" />
-    <replace file="builds/$$.tmp.js" token="// $.ajax.js here" value="${$.ajax.file}" />
-    <move file="builds/$$.tmp.js" tofile="builds/$$.js" />
+    <replace file="builds/$$.${engine}.tmp.js" token="// css engine here" value="${$.engine.file}" />
+    <replace file="builds/$$.${engine}.tmp.js" token="// $.support.js here" value="${$.support.file}" />
+    <replace file="builds/$$.${engine}.tmp.js" token="// $.ajax.js here" value="${$.ajax.file}" />
+    <move file="builds/$$.${engine}.tmp.js" tofile="builds/$$.${engine}.js" />
   </target>
 
   <target name="compress" depends="combine">
-    <loadfile srcFile="builds/$$.js" property="dollar" />
+    <loadfile srcFile="builds/$$.${engine}.js" property="dollar" />
     <exec executable="cmd">
       <arg value="/c"/>
       <arg value="node noComments.js"/>
       <redirector inputstring="${dollar}" outputproperty="dollarFile" />
     </exec>
-    <echo file="builds/$$.copy.js" message="${dollarFile}" />
+    <echo file="builds/$$.${engine}.copy.js" message="${dollarFile}" />
     <exec executable="cmd">
       <arg value="/c"/>
-      <arg value="compressor builds/$.copy.js"/>
+      <arg value="compressor builds/$.${engine}.copy.js"/>
       <arg value="-o"/>
-      <arg value="builds/$.min.js"/>
+      <arg value="builds/$.${engine}.min.js"/>
     </exec>
-    <delete file="builds/$.copy.js" />
+    <delete file="builds/$.${engine}.copy.js" />
   </target>
 
   <target name="slick">
@@ -85,6 +85,21 @@
     <exec executable="cmd">
       <arg value="/c"/>
       <arg value="git push origin master"/>
+    </exec>
+  </target>
+
+  <target name="gzip" depends="compress">
+    <exec executable="cmd">
+      <arg value="/c"/>
+      <arg value="gzip -rfS .gz builds"/>
+    </exec>
+    <antcall target="compress" />
+  </target>
+
+  <target name="slick:gzip">
+    <exec executable="cmd">
+      <arg value="/c"/>
+      <arg value="ant -Dengine=slick -f build.ant gzip"/>
     </exec>
   </target>
 </project>
